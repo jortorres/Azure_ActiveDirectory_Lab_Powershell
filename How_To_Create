@@ -1,0 +1,96 @@
+Here’s a step-by-step guide to **creating a single Domain Controller (DC) on Windows Server 2019 in Azure** and a **Windows 10 host** that will join the domain:
+
+---
+
+### **Step 1: Create a Windows Server 2019 VM for the Domain Controller**
+1. **Log in to Azure Portal** - [https://portal.azure.com](https://portal.azure.com)
+2. **Create a Virtual Network (VNet)**:
+   - Go to **"Virtual Networks" > "Create"**.
+   - Name: `AD-VNet`
+   - Address space: `172.16.0.0/16`
+   - Create **two subnets**:
+     - `AD-Subnet` (172.16.0.0/24) → For the domain controller
+     - `Client-Subnet` (172.16.1.0/24) → For Windows 10 client
+   - Click **"Create"**.
+
+3. **Create the Windows Server 2019 VM**:
+   - Go to **"Virtual Machines" > "Create" > "Azure Virtual Machine"**.
+   - Name: `DC-Server`
+   - Region: Select your desired location.
+   - Image: `Windows Server 2019 Datacenter`
+   - Size: `Standard B2ms` (2 vCPUs, 8GB RAM)
+   - Authentication: Choose `Password` and set username & password.
+   - **Networking**:
+     - Virtual Network: `AD-VNet`
+     - Subnet: `AD-Subnet`
+     - Public IP: `None` (optional for security)
+   - Click **"Review + Create"** → **"Create"**.
+
+---
+
+### **Step 2: Configure Active Directory Domain Services (AD DS)**
+4. **Connect to the Server via RDP**:
+   - Go to **"Virtual Machines" > "DC-Server" > "Connect" > "RDP"**.
+   - Download RDP file and connect.
+
+5. **Install Active Directory & Promote Server to Domain Controller**:
+   - Open **Server Manager** > **Manage** > **Add Roles and Features**.
+   - Select **"Active Directory Domain Services (AD DS)"**.
+   - Click **Next** and Install.
+   - After installation, click **"Promote this server to a domain controller"**.
+   - Select **"Add a new forest"** and set **Root domain name** (e.g., `myazuread.com`).
+   - Set **Directory Services Restore Mode (DSRM) password**.
+   - Complete the wizard and restart.
+
+---
+
+### **Step 3: Set Up DHCP and DNS**
+6. **Configure Static IP for the Domain Controller**:
+   - Go to **Network & Internet Settings > Change Adapter Options**.
+   - Select the **Ethernet Adapter** and set:
+     - IP Address: `172.16.0.1`
+     - Subnet Mask: `255.255.255.0`
+     - DNS Server: `127.0.0.1`
+
+7. **Set Up DHCP Scope**:
+   - Open **Server Manager** > **Tools** > **DHCP**.
+   - Right-click on **IPv4** > **New Scope**:
+     - Scope Name: `Client Scope`
+     - Range: `172.16.1.100 - 172.16.1.200`
+     - Subnet Mask: `255.255.255.0`
+     - Default Gateway: `172.16.0.1`
+     - DNS Server: `172.16.0.1`
+   - Activate the Scope.
+
+---
+
+### **Step 4: Create a Windows 10 VM and Join to Domain**
+8. **Create a Windows 10 VM**:
+   - Go to **"Virtual Machines" > "Create"**.
+   - Name: `Client-Win10`
+   - Image: `Windows 10 Pro`
+   - Virtual Network: `AD-VNet`
+   - Subnet: `Client-Subnet`
+   - Click **"Create"**.
+
+9. **Connect to Windows 10 VM via RDP**.
+
+10. **Join Windows 10 to the Domain**:
+    - Open **Network Adapter Settings** and set **DNS to 172.16.0.1**.
+    - Open **System Properties** (`sysdm.cpl`).
+    - Click **"Change"**, select **"Domain"**, and enter `myazuread.com`.
+    - Provide **Domain Admin Credentials**.
+    - Restart the VM.
+
+---
+
+### **Step 5: Verify and Test**
+11. **Login to Windows 10 using Domain Credentials**:
+    - Username: `myazuread\yourusername`
+    - Password: `<your password>`
+
+12. **Test AD Functionality**:
+    - Open **Active Directory Users and Computers (ADUC)** on the **DC Server**.
+    - Verify the Windows 10 computer is listed in **Computers**.
+
+---
