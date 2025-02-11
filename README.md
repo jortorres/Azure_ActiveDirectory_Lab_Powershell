@@ -1,2 +1,2 @@
 # AD_Lab_Powershell
-Acitve Directory Lab with using w/powershell to load 1000+ 
+Created an Acitve Directory Lab in azure and used a powershell scrtip to load 1000 user from a name text file. 
